@@ -1,0 +1,23 @@
+# Explicit quality overrides. Anything not listed defaults to "good", except the
+# size/gradient rules applied automatically in apply-labels.ts.
+#   exclude = unplayable on a party board
+#   weak    = playable, but keep it off a board by default
+# id<TAB>quality<TAB>why
+d105-p6	exclude	self-referential meta prompt about the word krillion
+d25-p7	weak	pinned to a specific 2026 date and box-office threshold
+d101-p1	weak	dated: 2026 theatrical releases only
+d115-p5	weak	dated: 2025-26 releases only
+d38-p6	weak	dated and compound (2026 plus a $100m threshold)
+d27-p7	weak	dated: 2026 World Cup squad
+d98-p2	weak	dated: current NBA roster
+d102-p7	weak	dated: current Premier League / NFL roster
+d29-p3	weak	dated: current heads of state
+d64-p1	weak	expert niche: Fortune 500 CEOs
+d69-p3	weak	expert niche: Tranco top-200 ranking
+d122-p1	weak	expert niche: billionaires
+d94-p3	weak	compound award criteria across four leagues
+d106-p6	weak	compound: teammates of four named athletes
+d101-p4	weak	any 5-letter word; no category to reason about
+d109-p7	weak	common first names; recall is arbitrary, not skillful
+d113-p7	weak	prompt text carries the original author personal aside
+d1-p5	weak	duplicate of d68-p5 (same element prompt)

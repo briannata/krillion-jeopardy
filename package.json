@@ -1,0 +1,18 @@
+{
+  "name": "krillion-jeopardy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx scripts/scrape.ts",
+    "build:dataset": "tsx scripts/build-dataset.ts",
+    "stats": "tsx scripts/stats.ts",
+    "test:matcher": "tsx scripts/test-matcher.ts",
+    "apply:labels": "tsx scripts/apply-labels.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

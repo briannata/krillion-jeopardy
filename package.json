@@ -8,11 +8,19 @@
     "build:dataset": "tsx scripts/build-dataset.ts",
     "stats": "tsx scripts/stats.ts",
     "test:matcher": "tsx scripts/test-matcher.ts",
-    "apply:labels": "tsx scripts/apply-labels.ts"
+    "apply:labels": "tsx scripts/apply-labels.ts",
+    "dev": "tsx watch src/server/index.ts",
+    "start": "tsx src/server/index.ts",
+    "test:engine": "tsx scripts/test-engine.ts",
+    "smoke": "tsx scripts/smoke-server.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
   }
 }

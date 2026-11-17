@@ -185,6 +185,31 @@ distance for typos (≤1 for short strings, ≤2 for long). An alias table handl
 ("spag bol", "bolognese"). **No match = 0 points**, surfaced plainly — the archive openly admits it
 is not exhaustive, so some genuinely valid answers will score 0.
 
+## Server (built)
+
+- **Pure engine / impure room.** `src/game/engine.ts` is a state machine taking `now`
+  and `rng` as arguments; `src/server/room.ts` owns the clock, the sockets and the
+  matcher. Rule bugs are testable without a socket; timing bugs are confined to one file.
+- **Phases:** `lobby -> picking -> answering -> revealing -> (picking | finished)`.
+- **Reveal batching** groups players by tier and plays surface-to-deep, misses first.
+  At most 7 steps per round no matter how many players, which is what makes
+  "no player limit" compatible with a one-at-a-time reveal.
+- **Picker** is the previous round's top scorer, chosen at random among ties, falling
+  back to the host if that player has dropped.
+- **Board generation weights themes by remaining depth**, and skips any theme that can
+  no longer fill a column. This is the fix for thin `people` — measured at geography
+  278x vs people 21x across 400 boards, and 36 boards per room before the pool dries up.
+- **Reconnection** is by token: same player id, score preserved, one socket per player.
+- **Rooms** are in-memory, 4-letter codes from a 24-letter alphabet with I/O/0/1 removed,
+  swept after 2h idle.
+
+### Verified
+- `npm run test:engine` — board generation, 36 non-repeating boards per room, thin-theme
+  weighting, a full 20-round game, reveal ordering, reconnection.
+- `npm run smoke` — real sockets: a correct answer scored its stored tier ("Ice hockey",
+  10pts, Plankton), gibberish scored 0, the round winner took the next pick, drafts never
+  reached the other player, largest frame 2.3KB, and The Catch returned 403 mid-game.
+
 ## Open / deferred
 - Reveal pacing when one tier holds nearly everyone — needs a feel pass once playable.
   Less urgent than feared: the median prompt is only 62% Deep Cut.
@@ -192,6 +217,8 @@ is not exhaustive, so some genuinely valid answers will score 0.
 - Board generation should prefer prompts with a real tier gradient (and probably cap
   answer-list size) rather than sampling all 854 uniformly.
 - Alias table is a stub (3 entries). Grow it from what players actually type.
+- No client yet — the server is complete and tested, but nothing renders the board.
+- Rooms are in-memory only: a server restart drops every game in progress.
 
 ## Resolved during the build
 - **"Too Clever" exists.** All six tiers are live; no tier needs special-casing.

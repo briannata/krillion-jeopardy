@@ -218,6 +218,13 @@ Vite + React + TypeScript, one bundle serving two surfaces: the player client at
 - **The host screen attaches with `watch`** — a display-only connection added to
   the server for this. It sees state, never joins the scoreboard, never sends an
   intent.
+- **Becoming the screen is a button, not a URL to know.** "Use this device as the
+  screen" on the join screen watches the typed code, or opens a room first when
+  the field is empty — the TV-first order, where the screen goes up and the
+  phones join the code it shows. Because the screen does not join, the first
+  phone to arrive is still the host. The lobby also offers it, for casting a
+  room started from a phone. A bad or expired code gets an error and a way back
+  rather than a blank display.
 - **Reconnection** is by a token kept in sessionStorage per room, so a refresh
   rejoins as the same player with the same score.
 - **Drafts are debounced to the server** (~220ms) so a reconnect keeps what you

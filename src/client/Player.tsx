@@ -49,6 +49,20 @@ function Join({ game }: { game: Game }) {
     } finally { setBusy(false); }
   };
 
+  /**
+   * Turn this device into the shared screen. With a code it watches that room;
+   * without one it opens a room first, which is the TV-first flow — the screen
+   * puts up a code and the phones join it. No name: a screen never plays.
+   */
+  const useAsScreen = async () => {
+    let target = code.trim();
+    if (target.length !== 4) {
+      setBusy(true);
+      try { target = await createRoom(); } finally { setBusy(false); }
+    }
+    location.href = `/?host=${target}`;
+  };
+
   const ready = code.trim().length === 4 && name.trim().length > 0;
 
   return (
@@ -91,10 +105,17 @@ function Join({ game }: { game: Game }) {
 
       <div style={{ flexGrow: 1 }} />
 
-      <div style={{ borderTop: "1px solid var(--line)", paddingTop: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ borderTop: "1px solid var(--line)", paddingTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
         <button type="button" className="btn btn-quiet" onClick={start} disabled={busy}>
           {busy ? "Opening a room…" : "Start a new room"}
         </button>
+        <button type="button" className="btn btn-quiet" onClick={useAsScreen} disabled={busy}>
+          Use this device as the screen
+        </button>
+        <p style={{ margin: "2px 0 12px", fontSize: 12.5, color: "var(--dim)", lineHeight: 1.45 }}>
+          For a TV or laptop everyone can see. It shows the board and the code, and
+          takes no part in the game.
+        </p>
         <Attribution />
       </div>
     </div>
@@ -139,6 +160,15 @@ function Lobby({ game, state }: { game: Game; state: GameView }) {
       </div>
 
       <div style={{ flexGrow: 1, minHeight: 24 }} />
+
+      {/* Anyone can cast the board: the screen only watches, so it is safe to
+          hand out and does not need to be the host's device. */}
+      <button
+        type="button" className="btn btn-quiet" style={{ marginBottom: 12 }}
+        onClick={() => window.open(`/?host=${state.code}`, "_blank", "noopener")}
+      >
+        Open the shared screen
+      </button>
 
       {isHost ? (
         <button className="btn" onClick={() => game.send({ type: "start" })}>

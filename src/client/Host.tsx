@@ -28,6 +28,12 @@ export function Host({ game, code }: { game: Game; code: string }) {
         <p style={{ fontSize: 18, color: "var(--muted)" }}>
           {game.error ?? `Connecting to room ${code}…`}
         </p>
+        {/* A bad or expired code would otherwise dead-end on a blank screen. */}
+        {game.error && (
+          <a href="/" className="btn btn-quiet" style={{ textDecoration: "none", width: 260, textAlign: "center" }}>
+            Back
+          </a>
+        )}
       </div>
     );
   }

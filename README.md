@@ -28,9 +28,20 @@ npm start        # game server on :8787
 npm run client   # client on http://localhost:5173
 ```
 
-Then open **http://localhost:5173** on each phone and, optionally,
-**http://localhost:5173/?host=CODE** on the shared screen. Vite proxies `/api`
-and `/ws` to the server, so the browser only ever sees one origin.
+Then open **http://localhost:5173** on every device. There are two ways in,
+both from the join screen:
+
+- **Start a new room** — you become a player, and the host.
+- **Use this device as the screen** — the shared display for a TV or laptop.
+  With a code typed in it watches that room; with the field empty it opens a
+  room first, so the screen can go up before anyone has joined.
+
+The screen is also reachable directly at **/?host=CODE**, and the lobby has an
+**Open the shared screen** button for casting a room you started from a phone.
+A screen only watches: it never joins the scoreboard and holds no controls.
+
+Vite proxies `/api` and `/ws` to the server, so the browser only ever sees one
+origin.
 
 | script | what |
 |---|---|

@@ -225,6 +225,18 @@ Vite + React + TypeScript, one bundle serving two surfaces: the player client at
   phone to arrive is still the host. The lobby also offers it, for casting a
   room started from a phone. A bad or expired code gets an error and a way back
   rather than a blank display.
+- **The screen shows a join QR**, served by `GET /api/rooms/:code/qr.svg`. The
+  origin comes from the screen's own `location.origin`, not from the request:
+  in dev the Vite proxy rewrites Host to `localhost:8787`, which no phone can
+  reach. The screen was opened at an address the phones beside it can reach, so
+  that is the one to encode. The parameter is validated to a bare
+  `http(s)://host[:port]` and the path is built server-side, so it cannot aim
+  the QR anywhere else.
+- **The QR is dark-on-light**, against the rest of the palette. Inverted codes
+  look better on a dark screen but not every scanner reads them, and this has
+  one job. It also rides along in the top bar while picking — `addPlayer` has no
+  phase guard, so a latecomer can still join — but not during answering or
+  reveal, where it would be noise.
 - **Reconnection** is by a token kept in sessionStorage per room, so a refresh
   rejoins as the same player with the same score.
 - **Drafts are debounced to the server** (~220ms) so a reconnect keeps what you

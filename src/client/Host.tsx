@@ -47,6 +47,25 @@ export function Host({ game, code }: { game: Game; code: string }) {
   }
 }
 
+/**
+ * The join QR. The server draws it, but from THIS screen's origin: a phone has
+ * to be able to reach the address, and whatever address this screen was opened
+ * at is one the phones beside it can reach too. The server's own view of the
+ * request is useless here — in dev the Vite proxy makes it localhost.
+ */
+function JoinQr({ code, size }: { code: string; size: number }) {
+  const src = `/api/rooms/${code}/qr.svg?origin=${encodeURIComponent(location.origin)}`;
+  return (
+    <img
+      src={src} width={size} height={size} alt={`Scan to join room ${code}`}
+      style={{
+        display: "block", borderRadius: "var(--radius)",
+        background: "var(--text)", border: "1px solid var(--line)",
+      }}
+    />
+  );
+}
+
 // ---------------------------------------------------------------- lobby
 
 function HostLobby({ state }: { state: GameView }) {
@@ -70,10 +89,20 @@ function HostLobby({ state }: { state: GameView }) {
           ))}
         </div>
 
-        <p style={{ margin: "0 0 28px", fontSize: 19, color: "var(--muted)", lineHeight: 1.55, maxWidth: 520 }}>
-          Twenty prompts. Everyone answers at once, and the rarer your answer, the deeper you sink.
-          No limit on players.
-        </p>
+        <div style={{ display: "flex", gap: 26, alignItems: "center", margin: "0 0 28px" }}>
+          <JoinQr code={state.code} size={172} />
+          <div style={{ maxWidth: 330 }}>
+            <p className="mono" style={{
+              margin: "0 0 10px", fontSize: 13, letterSpacing: "0.2em", color: "var(--accent)",
+            }}>
+              OR SCAN TO JOIN
+            </p>
+            <p style={{ margin: 0, fontSize: 18, color: "var(--muted)", lineHeight: 1.55 }}>
+              Twenty prompts. Everyone answers at once, and the rarer your answer,
+              the deeper you sink. No limit on players.
+            </p>
+          </div>
+        </div>
         <Attribution />
       </div>
 
@@ -474,7 +503,11 @@ function TopBar({ state, centre }: { state: GameView; centre: string }) {
         <span style={{ fontSize: 18, fontWeight: 600 }}>{centre}</span>
       </Panel>
 
-      <Panel tone="mid" style={{ padding: "9px 18px", display: "flex", alignItems: "center", gap: 10 }}>
+      <Panel tone="mid" style={{ padding: "9px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+        {/* A latecomer can still join — addPlayer has no phase guard, they just
+            start at zero. The QR rides along only while picking: on the
+            answering and reveal screens it would be noise. */}
+        {state.phase === "picking" && <JoinQr code={state.code} size={56} />}
         <span className="mono" style={{ fontSize: 11, letterSpacing: "0.16em", color: "var(--accent)" }}>ROOM</span>
         <span className="mono" style={{ fontSize: 16, fontWeight: 600, letterSpacing: "0.2em" }}>{state.code}</span>
       </Panel>

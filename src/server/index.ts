@@ -5,6 +5,7 @@
  *   POST /api/rooms                              create a room, returns its code
  *   GET  /api/rooms/:code                        does this room exist?
  *   GET  /api/rooms/:code/catch/:promptId        paged answer list, AFTER the game
+ *   GET  /api/rooms/:code/qr.svg                 join QR for the shared screen
  *   GET  /health
  *
  * WS   /ws                                       all gameplay
@@ -16,6 +17,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
+import QRCode from "qrcode";
 import { Catalogue } from "./catalogue.ts";
 import { Room, RoomRegistry } from "./room.ts";
 import { BoardGenerationError } from "../game/board.ts";
@@ -69,6 +71,11 @@ async function main() {
         // /api/rooms/:code/catch/:promptId
         if (parts[3] === "catch" && parts[4]) {
           return await serveCatch(res, room, parts[4], url, catalogue);
+        }
+
+        // /api/rooms/:code/qr.svg
+        if (parts[3] === "qr.svg") {
+          return await serveJoinQr(res, room.code, url);
         }
       }
 
@@ -169,6 +176,42 @@ async function main() {
  * The Catch: one prompt's answers, filtered and paged, mirroring krillion.io's
  * post-game browser (tier chips, search box, 100 at a time).
  */
+/**
+ * A QR of the join URL, for the shared screen to display.
+ *
+ * The origin comes from the screen's own `location.origin`, not from this
+ * server's view of the request: in dev the Vite proxy rewrites Host to
+ * localhost:8787, and a phone cannot reach that. The screen was reached at an
+ * address on the same network as the phones, so its origin is the right one.
+ *
+ * It is validated to a bare http(s) host[:port] and the path is built here, so
+ * the parameter cannot steer the QR at an arbitrary URL.
+ */
+async function serveJoinQr(res: ServerResponse, code: string, url: URL): Promise<void> {
+  const origin = url.searchParams.get("origin") ?? "";
+  if (!/^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?$/.test(origin)) {
+    return json(res, 400, { error: "bad origin" });
+  }
+
+  const svg = await QRCode.toString(`${origin}/?code=${code}`, {
+    type: "svg",
+    margin: 2,
+    // Dark modules on light, which is the way round the QR spec assumes. An
+    // inverted code suits the dark screen better but not every scanner reads
+    // one, and this exists to be scanned by whatever phone someone brought.
+    // Palette ink rather than pure black/white, so it still sits in the design.
+    color: { dark: "#04161e", light: "#edf4f7" },
+  });
+
+  res.writeHead(200, {
+    "content-type": "image/svg+xml; charset=utf-8",
+    "content-length": Buffer.byteLength(svg),
+    // The code is fixed for the room's life, but a room is short-lived.
+    "cache-control": "public, max-age=60",
+  });
+  res.end(svg);
+}
+
 async function serveCatch(
   res: ServerResponse,
   room: Room,

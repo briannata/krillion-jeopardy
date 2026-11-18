@@ -14,10 +14,12 @@
     "test:engine": "tsx scripts/test-engine.ts",
     "smoke": "tsx scripts/smoke-server.ts",
     "client": "vite",
-    "build:client": "vite build"
+    "build:client": "vite build",
+    "qr": "tsx scripts/qr.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@types/ws": "^8.5.13",
@@ -27,6 +29,7 @@
     "vite": "^6.0.7"
   },
   "dependencies": {
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "ws": "^8.18.0"

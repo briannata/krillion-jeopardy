@@ -10,6 +10,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // Listen on the LAN, not just localhost: it is a party game, so the phones
+    // testing it are other devices on the same Wi-Fi. Only :5173 needs exposing —
+    // the game server stays on localhost behind the proxy below.
+    host: true,
     proxy: {
       "/api": { target: "http://localhost:8787", changeOrigin: true },
       "/ws": { target: "ws://localhost:8787", ws: true },

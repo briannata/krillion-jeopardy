@@ -40,6 +40,17 @@ The screen is also reachable directly at **/?host=CODE**, and the lobby has an
 **Open the shared screen** button for casting a room you started from a phone.
 A screen only watches: it never joins the scoreboard and holds no controls.
 
+The screen shows a **join QR** beside the room code, so nobody has to type an
+address. It is drawn from the screen's own origin, so the phones get a URL on
+the same network rather than `localhost`. Vite listens on the LAN for this
+(`server.host` in `vite.config.ts`) — phones must be on the same Wi-Fi.
+
+To get the first phone to the join screen before a room exists:
+
+```bash
+npm run qr
+```
+
 Vite proxies `/api` and `/ws` to the server, so the browser only ever sees one
 origin.
 
@@ -49,6 +60,7 @@ origin.
 | `npm run dev` | game server, reloading on change |
 | `npm run client` | client dev server |
 | `npm run build:client` | production client bundle |
+| `npm run qr` | QR to the dev client on this machine's LAN address |
 | `npm run smoke` | end-to-end socket test against a running server |
 
 The server needs the dataset built first (see Pipeline below).

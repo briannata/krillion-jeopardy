@@ -6,3 +6,6 @@ data/
 
 # Client build output (vite build -> dist/client).
 dist/
+
+# Written by `npm run qr`.
+qr.svg

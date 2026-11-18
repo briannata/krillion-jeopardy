@@ -138,6 +138,11 @@ points at a prompt that no longer exists, or any theme/quality value is unknown.
   the phones.
 - **The client holds no rules.** It cannot decide a tile is taken, that an answer
   scored, or whose pick is next — it renders `state` and sends what you did.
+- **A lock that would score nothing is refused**, so you can think again while the
+  clock runs rather than discovering it at the reveal. An unmatched answer still
+  scores zero if the timer catches it — the refusal only stops you committing.
+- **The Catch reads rarest first.** The reveal builds surface-to-deep; the archive
+  is for reading, so one in a krillion comes first.
 - **Accent and tier colours are separated by ROLE, not hue.** They share the
   blue-violet range: `--accent` is interactive chrome only, `--tier-*` is rarity
   only. Using a tier colour for a button undoes that.

@@ -23,6 +23,7 @@ import { Room, RoomRegistry } from "./room.ts";
 import { BoardGenerationError } from "../game/board.ts";
 import { GameError } from "../game/engine.ts";
 import { normalize } from "../normalize.ts";
+import { reachableOrigin } from "./lan.ts";
 import type { ClientMessage, ServerMessage } from "../game/types.ts";
 import type { Tier } from "../../scripts/krillion.ts";
 
@@ -144,7 +145,7 @@ async function main() {
             room.draft(playerId, msg.text);
             return;
           case "lock":
-            room.lock(playerId);
+            await room.lock(playerId);
             return;
           case "advance":
             if (!isHost) return fail("only the host can skip ahead");
@@ -181,17 +182,21 @@ async function main() {
  *
  * The origin comes from the screen's own `location.origin`, not from this
  * server's view of the request: in dev the Vite proxy rewrites Host to
- * localhost:8787, and a phone cannot reach that. The screen was reached at an
- * address on the same network as the phones, so its origin is the right one.
+ * localhost:8787, and a phone cannot reach that.
  *
- * It is validated to a bare http(s) host[:port] and the path is built here, so
- * the parameter cannot steer the QR at an arbitrary URL.
+ * But the screen is very often opened ON this machine, at localhost — which a
+ * phone cannot reach either. So a loopback origin is rewritten to the LAN
+ * address, keeping the port. Only a non-loopback origin is taken as given.
+ *
+ * The parameter is validated to a bare http(s) host[:port] and the path is
+ * built here, so it cannot steer the QR at an arbitrary URL.
  */
 async function serveJoinQr(res: ServerResponse, code: string, url: URL): Promise<void> {
-  const origin = url.searchParams.get("origin") ?? "";
-  if (!/^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?$/.test(origin)) {
+  const raw = url.searchParams.get("origin") ?? "";
+  if (!/^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?$/.test(raw)) {
     return json(res, 400, { error: "bad origin" });
   }
+  const origin = reachableOrigin(raw);
 
   const svg = await QRCode.toString(`${origin}/?code=${code}`, {
     type: "svg",
@@ -242,7 +247,13 @@ async function serveCatch(
     Math.max(1, Number(url.searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE),
   );
 
-  let rows = loaded.answers;
+  // Rarest first: the one-in-a-krillion answers are what people open this to
+  // read, and a list running to thousands would otherwise bury them behind the
+  // obvious ones. Copied before sorting — `loaded.answers` is the catalogue's
+  // cached array, shared with the matcher.
+  let rows = [...loaded.answers].sort(
+    (a, b) => b.score - a.score || a.answer.localeCompare(b.answer),
+  );
   if (tier) rows = rows.filter((a) => a.tier === tier);
   if (q) {
     const needle = normalize(q);

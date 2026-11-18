@@ -148,8 +148,27 @@ async function main() {
   console.log(`  Bo answers "${known.answer}" (stored ${known.tier}, ${known.score}pts)`);
   bo.send({ type: "draft", text: known.answer });
   await new Promise((r) => setTimeout(r, 150));
+
+  // Ada is still holding gibberish. Locking it must be REFUSED: an answer that
+  // matches nothing is worth zero, and she should find that out now, while she
+  // can still think again, rather than at the reveal.
+  const beforeLock = ada.frames.length;
+  ada.send({ type: "lock" });
+  await new Promise((r) => setTimeout(r, 250));
+  check("unmatched answer is refused at lock",
+    ada.frames.slice(beforeLock).some((f) => f.includes("on the list")));
+  check("a refused lock leaves the player unlocked", !ada.state!.you?.locked);
+  check("the refusal goes only to that player",
+    !bo.frames.some((f) => f.includes("on the list")));
+
+  // She tries again with Bo's answer. Duplicates are allowed and score
+  // independently — picking the same obvious word does not split the points.
+  ada.send({ type: "draft", text: known.answer });
+  await new Promise((r) => setTimeout(r, 150));
   ada.send({ type: "lock" });
   bo.send({ type: "lock" });
+  await new Promise((r) => setTimeout(r, 250));
+  check("a matching answer locks", !!ada.state!.you?.locked);
 
   await ada.until(() => ada.state?.phase === "revealing", "revealing");
   check("locking shortens the round", true);
@@ -171,17 +190,25 @@ async function main() {
     { got: boEntry.points, want: known.score, tier: boEntry.tier });
   check("matched answer is echoed back", boEntry.matchedAnswer === known.answer,
     { got: boEntry.matchedAnswer, want: known.answer });
-  check("gibberish scored 0", adaEntry.points === 0, adaEntry);
+  check("duplicate answers score independently",
+    adaEntry.points === known.score && boEntry.points === known.score,
+    { ada: adaEntry.points, bo: boEntry.points, want: known.score });
   check("miss batch comes before the scoring batch",
     revealed[0]!.points <= revealed[revealed.length - 1]!.points);
 
   await ada.until(() => ada.state?.phase === "picking", "next round");
   const scores = ada.state!.players.map((p) => `${p.name} ${p.score}`);
   console.log(`  scores: ${scores.join(" · ")}`);
-  check("scoring player is ahead", 
+  check("scoring player is ahead",
     ada.state!.players.find((p) => p.id === bo.playerId)!.score === known.score);
-  check("next picker is the round winner", ada.state!.pickerId === bo.playerId,
-    ada.state!.pickerId);
+
+  // Both gave the same answer, so both are on the same score. The picker is the
+  // round's top scorer, chosen at RANDOM among ties — so the test can only
+  // assert that it is one of the leaders, never which one.
+  const top = Math.max(...ada.state!.players.map((p) => p.score));
+  const leaders = ada.state!.players.filter((p) => p.score === top).map((p) => p.id);
+  check("next picker is a round winner", leaders.includes(ada.state!.pickerId!),
+    { picker: ada.state!.pickerId, leaders, top });
 
   // --- the thing that matters most ----------------------------------------
   console.log("\nanswer leakage");

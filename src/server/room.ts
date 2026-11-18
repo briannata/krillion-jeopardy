@@ -11,7 +11,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { WebSocket } from "ws";
-import { Game, type ScoredSubmission } from "../game/engine.ts";
+import { Game, GameError, type ScoredSubmission } from "../game/engine.ts";
 import { BoardGenerationError } from "../game/board.ts";
 import type { ServerMessage } from "../game/types.ts";
 import type { Catalogue } from "./catalogue.ts";
@@ -129,9 +129,39 @@ export class Room {
     this.broadcast();
   }
 
-  lock(playerId: string): void {
-    this.game.lock(playerId, Date.now());
+  /**
+   * Locking is the one place the matcher runs before scoring.
+   *
+   * An answer that matches nothing is worth zero, and finding that out at the
+   * reveal — with no chance to think again — is a bad round. So a lock that
+   * would score nothing is refused and the player keeps typing. It does let
+   * someone probe the list by locking repeatedly, which is the trade Krillion
+   * itself makes: every probe costs time off the clock.
+   *
+   * The timer is untouched by a refusal, so the round still ends when it ends.
+   */
+  async lock(playerId: string): Promise<void> {
     this.lastActivity = Date.now();
+    if (this.game.phase !== "answering") throw new GameError("not answering right now");
+
+    const round = this.game.round!;
+    const text = this.game.draftOf(playerId);
+    if (!text.trim()) throw new GameError("Type an answer first.");
+
+    try {
+      const { matcher } = await this.catalogue.prompt(round.tile.promptId);
+      // The round can end while that await is in flight.
+      if (this.game.phase !== "answering" || this.game.round !== round) return;
+      if (matcher.match(text).score <= 0) {
+        throw new GameError(`“${text.trim()}” isn’t on the list — try something else.`);
+      }
+    } catch (err) {
+      // A GameError is the verdict. Anything else means the data would not
+      // load, and that must not stop someone locking in.
+      if (err instanceof GameError) throw err;
+    }
+
+    this.game.lock(playerId, Date.now());
     this.broadcast();
     this.scheduleAnswerDeadline();
   }

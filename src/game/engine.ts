@@ -172,6 +172,11 @@ export class Game {
     round.submissions.set(playerId, { text: text.slice(0, 120), locked: false });
   }
 
+  /** The text this player would be scored on right now. */
+  draftOf(playerId: string): string {
+    return this.round?.submissions.get(playerId)?.text ?? "";
+  }
+
   lock(playerId: string, now: number): void {
     if (this.phase !== "answering") throw new GameError("not answering right now");
     const round = this.round!;

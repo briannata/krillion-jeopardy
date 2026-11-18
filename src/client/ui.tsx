@@ -18,6 +18,14 @@ export const TIER_NAME: Record<Tier, string> = {
   krillion: "One in a Krillion",
 };
 
+/**
+ * Rarest first. The reveal runs the other way — surface to deep, so the round
+ * builds — but anywhere people READ the tiers, the krillion is the headline.
+ */
+export const TIER_BY_RARITY: Tier[] = [
+  "krillion", "deepcut", "rare", "schooler", "tooclever", "plankton",
+];
+
 /** Colour by points, so the ramp stays in one place. */
 export function tierColor(points: number): string {
   if (points >= 100) return "var(--tier-100)";

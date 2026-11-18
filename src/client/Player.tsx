@@ -11,7 +11,7 @@ import type { CatchEntry, GameView, Tier } from "../game/types.ts";
 import { createRoom, fetchCatch, type CatchPage, type Game } from "./useGame.ts";
 import {
   Attribution, Avatar, Panel, RevealRow, TierChip, Wordmark,
-  METRES, TIER_NAME, diverColor, tierColor, useCountdown,
+  METRES, TIER_BY_RARITY, TIER_NAME, diverColor, tierColor, useCountdown,
 } from "./ui.tsx";
 
 const page = (p: object = {}) => ({
@@ -281,6 +281,12 @@ function Answering({ game, state }: { game: Game; state: GameView }) {
   const [draft, setDraft] = useState(state.you?.draft ?? "");
   const pushed = useRef(draft);
 
+  // A refusal belongs to the prompt it was about. Depend on `game.clearError`,
+  // which useGame keeps stable — NOT on `game`, which is a fresh object every
+  // render and would re-run this on the very render that shows the error.
+  const { clearError } = game;
+  useEffect(() => { clearError(); }, [round.tileId, clearError]);
+
   // Mirror the draft to the server so a reconnect keeps what you typed, but do
   // not send a frame per keystroke.
   useEffect(() => {
@@ -325,13 +331,21 @@ function Answering({ game, state }: { game: Game; state: GameView }) {
         <label className="label" htmlFor="answer" style={{ marginBottom: 10 }}>Your answer</label>
         <input
           id="answer" className="field" value={draft} disabled={locked} autoComplete="off"
-          onChange={(e) => setDraft(e.target.value)}
-          style={{ fontSize: 21, fontWeight: 600, borderColor: locked ? "var(--line)" : "var(--accent)", marginBottom: 14 }}
+          onChange={(e) => { setDraft(e.target.value); game.clearError(); }}
+          style={{
+            fontSize: 21, fontWeight: 600, marginBottom: 14,
+            borderColor: game.error && !locked ? "var(--tier-85)" : locked ? "var(--line)" : "var(--accent)",
+          }}
         />
-        <p style={{ margin: "0 0 20px", fontSize: 13, color: "var(--dim)", lineHeight: 1.5 }}>
-          {locked
-            ? "Locked in. Waiting for the rest of the room."
-            : "Change it as often as you like until you lock in or the clock runs out."}
+        <p style={{
+          margin: "0 0 20px", fontSize: 13, lineHeight: 1.5,
+          color: game.error && !locked ? "var(--tier-85)" : "var(--dim)",
+        }}>
+          {game.error && !locked
+            ? game.error
+            : locked
+              ? "Locked in. Waiting for the rest of the room."
+              : "Change it as often as you like until you lock in or the clock runs out."}
         </p>
 
         <button
@@ -626,7 +640,7 @@ function Catch({ state, onBack }: { state: GameView; onBack: () => void }) {
             <div style={{ display: "flex", gap: 7, width: "max-content" }}>
               <Chip on={tier === ""} onClick={() => setTier("")}>All {open.answerCount.toLocaleString()}</Chip>
               {(Object.entries(open.tierCounts) as [Tier, number][])
-                .sort((a, b) => b[1] - a[1])
+                .sort((a, b) => TIER_BY_RARITY.indexOf(a[0]) - TIER_BY_RARITY.indexOf(b[0]))
                 .map(([t, n]) => (
                   <Chip key={t} on={tier === t} onClick={() => setTier(tier === t ? "" : t)} tier={t}>
                     {TIER_NAME[t]} {n.toLocaleString()}

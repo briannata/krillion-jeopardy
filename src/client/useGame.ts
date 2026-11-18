@@ -32,6 +32,8 @@ export interface Game {
   /** Attach as a display only — the host screen. */
   watch(code: string): void;
   send(msg: ClientMessage): void;
+  /** Drop the last error — the screen showing it has moved on. */
+  clearError(): void;
   leave(): void;
 }
 
@@ -85,7 +87,10 @@ export function useGame(): Game {
       let msg: ServerMessage;
       try { msg = JSON.parse(String(ev.data)) as ServerMessage; } catch { return; }
 
-      if (msg.type === "state") { setState(msg.state); setError(null); return; }
+      // Deliberately does NOT clear `error`: state arrives whenever anyone in
+      // the room does anything, so clearing here would wipe a refused lock off
+      // your screen the moment someone else typed. Errors clear when YOU act.
+      if (msg.type === "state") { setState(msg.state); return; }
       if (msg.type === "joined") {
         setPlayerId(msg.playerId);
         if (intent.current?.type === "join") {
@@ -120,7 +125,12 @@ export function useGame(): Game {
   const send = useCallback((msg: ClientMessage) => {
     const ws = socket.current;
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+    // Acting clears the last complaint: a refused lock should vanish as soon as
+    // you change the answer, not sit there while you retype.
+    if (msg.type === "draft" || msg.type === "pick") setError(null);
   }, []);
+
+  const clearError = useCallback(() => setError(null), []);
 
   const leave = useCallback(() => {
     intent.current = null;
@@ -130,7 +140,7 @@ export function useGame(): Game {
     setStatus("idle");
   }, []);
 
-  return { status, state, error, playerId, join, watch, send, leave };
+  return { status, state, error, playerId, join, watch, send, clearError, leave };
 }
 
 /** Create a room and return its code. */

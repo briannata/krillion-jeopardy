@@ -228,10 +228,11 @@ Vite + React + TypeScript, one bundle serving two surfaces: the player client at
 - **The screen shows a join QR**, served by `GET /api/rooms/:code/qr.svg`. The
   origin comes from the screen's own `location.origin`, not from the request:
   in dev the Vite proxy rewrites Host to `localhost:8787`, which no phone can
-  reach. The screen was opened at an address the phones beside it can reach, so
-  that is the one to encode. The parameter is validated to a bare
-  `http(s)://host[:port]` and the path is built server-side, so it cannot aim
-  the QR anywhere else.
+  reach. But the screen is usually opened ON the server's machine, at
+  `localhost`, which no phone can reach either — so a loopback origin is
+  rewritten to this machine's LAN address, keeping the port (`src/server/lan.ts`).
+  The parameter is validated to a bare `http(s)://host[:port]` and the path is
+  built server-side, so it cannot aim the QR anywhere else.
 - **The QR is dark-on-light**, against the rest of the palette. Inverted codes
   look better on a dark screen but not every scanner reads them, and this has
   one job. It also rides along in the top bar while picking — `addPlayer` has no
@@ -239,6 +240,19 @@ Vite + React + TypeScript, one bundle serving two surfaces: the player client at
   reveal, where it would be noise.
 - **Reconnection** is by a token kept in sessionStorage per room, so a refresh
   rejoins as the same player with the same score.
+- **A lock that would score nothing is refused.** The matcher runs in
+  `Room.lock`, and an answer matching no entry comes back as
+  "… isn't on the list — try something else" with the player still unlocked and
+  the clock still running. Finding out at the reveal, too late to think again,
+  made for a dead round. It does let someone probe the list by locking
+  repeatedly; that is the trade Krillion itself makes, and every probe costs
+  time. An unmatched answer left in the box when the timer expires still scores
+  zero — the refusal only stops you *committing* to one.
+- **The Catch reads rarest first** — one in a krillion, then deep cut, rare, and
+  down. The reveal runs the other way, surface to deep, because there the point
+  is to build. Here the point is to read, and the rare answers are what people
+  open it for. The tier chips follow the same order (`TIER_BY_RARITY`), rather
+  than the old biggest-bucket-first.
 - **Drafts are debounced to the server** (~220ms) so a reconnect keeps what you
   typed without a frame per keystroke.
 - **The countdown renders from the server's deadline**, not a local timer, so a

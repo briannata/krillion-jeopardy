@@ -113,6 +113,14 @@ async function main() {
           return;
         }
 
+        if (msg.type === "watch") {
+          const target = rooms.get(msg.code);
+          if (!target) return fail("no room with that code");
+          target.watch(socket);
+          room = target;
+          return;
+        }
+
         if (!room || !playerId) return fail("join a room first");
         const isHost = room.game.hostId === playerId;
 

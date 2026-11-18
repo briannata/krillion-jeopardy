@@ -26,7 +26,8 @@ export const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 
 export interface Connection {
   socket: WebSocket;
-  playerId: string;
+  /** null for a display-only connection (the host screen). */
+  playerId: string | null;
 }
 
 export class Room {
@@ -69,10 +70,18 @@ export class Room {
     return { playerId, token: issued };
   }
 
+  /** Attach a display-only connection: it sees the board but never plays. */
+  watch(socket: WebSocket): void {
+    this.lastActivity = Date.now();
+    this.connections.add({ socket, playerId: null });
+    this.send(socket, { type: "state", state: this.game.view(null) });
+  }
+
   leave(socket: WebSocket): void {
     for (const c of [...this.connections]) {
       if (c.socket === socket) {
         this.connections.delete(c);
+        if (!c.playerId) continue;
         const stillHere = [...this.connections].some((o) => o.playerId === c.playerId);
         if (!stillHere) this.game.setConnected(c.playerId, false);
       }

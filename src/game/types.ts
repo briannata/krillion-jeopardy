@@ -16,6 +16,10 @@
 import type { Tier } from "../../scripts/krillion.ts";
 import type { Theme } from "../../scripts/apply-labels.ts";
 
+// The client builds against this file alone, so the contract re-exports the
+// enums it needs rather than making it reach into the pipeline scripts.
+export type { Tier, Theme };
+
 export type Phase = "lobby" | "picking" | "answering" | "revealing" | "finished";
 
 /** points x 10 = metres, per the dive metaphor. */
@@ -36,6 +40,11 @@ export interface TileView {
   /** Set only once the tile has been played — the board shows blanks. */
   playedBy?: string;
   played: boolean;
+  /**
+   * The prompt this tile asked, present ONLY once it has been played. An unplayed
+   * tile must not carry its text or the board gives the next question away.
+   */
+  promptText?: string;
 }
 
 export interface ColumnView {
@@ -124,6 +133,8 @@ export interface CatchEntry {
 
 export type ClientMessage =
   | { type: "join"; code: string; name: string; token?: string }
+  /** Display-only: receives state but never becomes a player. */
+  | { type: "watch"; code: string }
   | { type: "start" }
   | { type: "pick"; tileId: string }
   /** Draft update. Not scored, not shown to anyone else. */

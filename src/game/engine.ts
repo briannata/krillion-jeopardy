@@ -322,12 +322,17 @@ export class Game {
         isHost: p.id === this.hostId,
       }));
 
-    const tiles: TileView[] = (this.board?.tiles ?? []).map((t) => ({
-      id: t.id,
-      column: t.column,
-      played: this.playedTiles.has(t.id),
-      ...(this.tilePlayedBy.has(t.id) ? { playedBy: this.tilePlayedBy.get(t.id)! } : {}),
-    }));
+    const tiles: TileView[] = (this.board?.tiles ?? []).map((t) => {
+      const played = this.playedTiles.has(t.id);
+      return {
+        id: t.id,
+        column: t.column,
+        played,
+        // Only a played tile reveals its prompt.
+        ...(played ? { promptText: t.promptText } : {}),
+        ...(this.tilePlayedBy.has(t.id) ? { playedBy: this.tilePlayedBy.get(t.id)! } : {}),
+      };
+    });
 
     const columns = (this.board?.columns ?? []).map((c) => ({
       theme: c.theme, label: THEME_LABELS[c.theme], tileIds: c.tileIds,

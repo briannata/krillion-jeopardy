@@ -210,6 +210,28 @@ is not exhaustive, so some genuinely valid answers will score 0.
   10pts, Plankton), gibberish scored 0, the round winner took the next pick, drafts never
   reached the other player, largest frame 2.3KB, and The Catch returned 403 mid-game.
 
+## Client (built)
+
+Vite + React + TypeScript, one bundle serving two surfaces: the player client at
+`/` (phone-first) and the shared display at `/?host=CODE`.
+
+- **The host screen attaches with `watch`** — a display-only connection added to
+  the server for this. It sees state, never joins the scoreboard, never sends an
+  intent.
+- **Reconnection** is by a token kept in sessionStorage per room, so a refresh
+  rejoins as the same player with the same score.
+- **Drafts are debounced to the server** (~220ms) so a reconnect keeps what you
+  typed without a frame per keystroke.
+- **The countdown renders from the server's deadline**, not a local timer, so a
+  slow client cannot drift into answering after time is up.
+- Palette and motion live in `src/client/tokens.css`. Tier colour is looked up
+  from points in `ui.tsx` — no screen hardcodes a tier hex.
+
+### Verified by playing it
+Created a room, joined, started, picked a tile ("Name a mammal with stripes"),
+answered "Okapi" — scored 30, Schooler, 300m — the played tile then showed its
+prompt, and the host screen tracked every step in sync.
+
 ## Open / deferred
 - Reveal pacing when one tier holds nearly everyone — needs a feel pass once playable.
   Less urgent than feared: the median prompt is only 62% Deep Cut.
@@ -217,7 +239,8 @@ is not exhaustive, so some genuinely valid answers will score 0.
 - Board generation should prefer prompts with a real tier gradient (and probably cap
   answer-list size) rather than sampling all 854 uniformly.
 - Alias table is a stub (3 entries). Grow it from what players actually type.
-- No client yet — the server is complete and tested, but nothing renders the board.
+- The reveal advances on the server's timer; the client has no skip control yet
+  (the host `advance` message exists but nothing calls it).
 - Rooms are in-memory only: a server restart drops every game in progress.
 
 ## Resolved during the build

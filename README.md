@@ -18,11 +18,27 @@ project.
 
 ## Running it
 
+Two processes: the game server, and Vite for the client.
+
 ```bash
-npm start     # server on http://localhost:8787  (ws://localhost:8787/ws)
-npm run dev   # same, reloading on change
-npm run smoke # end-to-end test against a running server
+npm start        # game server on :8787
 ```
+
+```bash
+npm run client   # client on http://localhost:5173
+```
+
+Then open **http://localhost:5173** on each phone and, optionally,
+**http://localhost:5173/?host=CODE** on the shared screen. Vite proxies `/api`
+and `/ws` to the server, so the browser only ever sees one origin.
+
+| script | what |
+|---|---|
+| `npm start` | game server |
+| `npm run dev` | game server, reloading on change |
+| `npm run client` | client dev server |
+| `npm run build:client` | production client bundle |
+| `npm run smoke` | end-to-end socket test against a running server |
 
 The server needs the dataset built first (see Pipeline below).
 
@@ -74,6 +90,11 @@ points at a prompt that no longer exists, or any theme/quality value is unknown.
 | `src/server/room.ts` | room runtime: the clock, the sockets, matching |
 | `src/server/catalogue.ts` | catalogue load + lazy per-prompt answer loading |
 | `src/server/index.ts` | HTTP + WebSocket server |
+| `src/client/tokens.css` | the palette and motion, as CSS variables |
+| `src/client/useGame.ts` | the socket: join, watch, reconnect by token |
+| `src/client/ui.tsx` | shared pieces; tier colour comes from points, never a literal |
+| `src/client/Player.tsx` | player client — join, lobby, board, answer, reveal, surfaced, catch |
+| `src/client/Host.tsx` | shared display, read-only, attaches with `watch` |
 | `scripts/test-engine.ts` | plays full games through the engine |
 | `scripts/smoke-server.ts` | end-to-end test over real sockets |
 
@@ -89,6 +110,14 @@ points at a prompt that no longer exists, or any theme/quality value is unknown.
   alone would let a player look that prompt up on the archive site mid-round.
 - **The Catch endpoint refuses until the game is `finished`**, and only serves prompts
   that room actually played. Without that it is a mid-game answer oracle.
+- **The host screen is a spectator.** It connects with `watch`, so it receives
+  state but never becomes a player and never sends an intent. Every control is on
+  the phones.
+- **The client holds no rules.** It cannot decide a tile is taken, that an answer
+  scored, or whose pick is next — it renders `state` and sends what you did.
+- **Accent and tier colours are separated by ROLE, not hue.** They share the
+  blue-violet range: `--accent` is interactive chrome only, `--tier-*` is rarity
+  only. Using a tier colour for a button undoes that.
 - **`src/normalize.ts` is the single source of truth.** The builder bakes a normalized `key`
   into every stored answer; the matcher normalizes player input the same way. If the two
   drift, every lookup silently misses.

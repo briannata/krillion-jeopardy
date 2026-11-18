@@ -3,3 +3,6 @@ node_modules/
 # Scraped dataset: derived from krilliongame.com / krillion.io.
 # Kept local on purpose — not redistributed. Rebuild with `npm run scrape`.
 data/
+
+# Client build output (vite build -> dist/client).
+dist/
